@@ -7,12 +7,13 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"hash"
 	"hash/crc32"
 	"io"
 	"sync"
 	"unsafe"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type Encoder struct {
@@ -192,15 +193,17 @@ func maybeInitEncode() {
 	})
 }
 
-// Encode yEnc encodes the src buffer without adding any =y headers
-//
-// Deprecated: use Encoder as an io.WriteCloser which includes yEnc headers
-func Encode(src []byte) ([]byte, error) {
+// Encode yEnc encodes the src buffer without adding any =y headers.
+// The lineLength parameter specifies the maximum line length for the encoded output.
+func Encode(src []byte, lineLength int) ([]byte, error) {
 	if len(src) == 0 {
 		return nil, errors.New("empty source")
 	}
+	if lineLength < 1 {
+		return nil, errors.New("invalid line length")
+	}
 
-	dst := make([]byte, maxLength(len(src), 128))
+	dst := make([]byte, maxLength(len(src), lineLength))
 
 	length := C.rapidyenc_encode(
 		unsafe.Pointer(&src[0]),
